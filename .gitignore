@@ -1,0 +1,4 @@
+.env
+expenses.db
+input.wav
+__pycache__/
