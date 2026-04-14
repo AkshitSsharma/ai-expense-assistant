@@ -11,7 +11,7 @@ st.title("💰 Hanks AI Expense Dashboard")
 conn = sqlite3.connect("expenses.db")
 cursor = conn.cursor()
 
-# ✅ CREATE TABLE IF NOT EXISTS (FIX FOR DEPLOYMENT)
+# ---------- CREATE TABLE ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY,
@@ -25,51 +25,65 @@ conn.commit()
 # ---------- LOAD DATA ----------
 df = pd.read_sql_query("SELECT * FROM expenses", conn)
 
-# ---------- IF EMPTY ----------
+# ---------- ADD DEMO DATA IF EMPTY ----------
 if df.empty:
-    st.warning("No data yet. Add expenses using your voice assistant locally.")
+    demo_data = [
+        (500, "Food", "2026-04-10"),
+        (1200, "Shopping", "2026-04-11"),
+        (300, "Transport", "2026-04-12"),
+        (800, "Food", "2026-04-13"),
+        (1500, "Bills", "2026-04-14")
+    ]
 
-else:
-    df["date"] = pd.to_datetime(df["date"])
+    cursor.executemany(
+        "INSERT INTO expenses (amount, category, date) VALUES (?, ?, ?)",
+        demo_data
+    )
+    conn.commit()
 
-    # ---------- TOTAL ----------
-    total = df["amount"].sum()
-    st.metric("💸 Total Spending", f"₹{total:,}")
+    df = pd.read_sql_query("SELECT * FROM expenses", conn)
 
-    col1, col2 = st.columns(2)
+# ---------- PROCESS DATA ----------
+df["date"] = pd.to_datetime(df["date"])
 
-    # ---------- CATEGORY PIE ----------
-    with col1:
-        st.subheader("Category Distribution")
-        cat_data = df.groupby("category")["amount"].sum()
+# ---------- TOTAL ----------
+total = df["amount"].sum()
+st.metric("💸 Total Spending", f"₹{total:,}")
 
-        fig1, ax1 = plt.subplots()
-        ax1.pie(cat_data, labels=cat_data.index, autopct='%1.1f%%')
-        ax1.set_title("Category Split")
-        st.pyplot(fig1)
+col1, col2 = st.columns(2)
 
-    # ---------- BAR CHART ----------
-    with col2:
-        st.subheader("Spending by Category")
-        fig2, ax2 = plt.subplots()
-        cat_data.plot(kind="bar", ax=ax2)
-        ax2.set_ylabel("Amount (₹)")
-        ax2.set_title("Category Spending")
-        st.pyplot(fig2)
+# ---------- CATEGORY PIE ----------
+with col1:
+    st.subheader("Category Distribution")
+    cat_data = df.groupby("category")["amount"].sum()
 
-    # ---------- DAILY TREND ----------
-    st.subheader("📈 Daily Spending Trend")
-    daily = df.groupby("date")["amount"].sum()
+    fig1, ax1 = plt.subplots()
+    ax1.pie(cat_data, labels=cat_data.index, autopct='%1.1f%%')
+    ax1.set_title("Category Split")
+    st.pyplot(fig1)
 
-    fig3, ax3 = plt.subplots()
-    daily.plot(ax=ax3)
-    ax3.set_ylabel("Amount (₹)")
-    ax3.set_title("Spending Over Time")
-    st.pyplot(fig3)
+# ---------- BAR CHART ----------
+with col2:
+    st.subheader("Spending by Category")
+    fig2, ax2 = plt.subplots()
+    cat_data.plot(kind="bar", ax=ax2)
+    ax2.set_ylabel("Amount (₹)")
+    ax2.set_title("Category Spending")
+    st.pyplot(fig2)
 
-    # ---------- TABLE ----------
-    st.subheader("📋 All Transactions")
-    st.dataframe(df, use_container_width=True)
+# ---------- DAILY TREND ----------
+st.subheader("📈 Daily Spending Trend")
+daily = df.groupby("date")["amount"].sum()
+
+fig3, ax3 = plt.subplots()
+daily.plot(ax=ax3)
+ax3.set_ylabel("Amount (₹)")
+ax3.set_title("Spending Over Time")
+st.pyplot(fig3)
+
+# ---------- TABLE ----------
+st.subheader("📋 All Transactions")
+st.dataframe(df, use_container_width=True)
 
 # ---------- CLOSE DB ----------
 conn.close()
