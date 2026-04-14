@@ -64,9 +64,9 @@ speak("Hi, I am Hanks, your AI financial assistant. Tell me your expense or ask 
 # ---------- GET COMMAND ----------
 user_input = speech_to_text()
 
-# =====================================================
+
 # ===================== REPORT =========================
-# =====================================================
+
 if "report" in user_input:
 
     df = pd.read_sql_query("SELECT * FROM expenses", conn)
@@ -117,9 +117,8 @@ if "report" in user_input:
 
             speak(response.choices[0].message.content)
 
-# =====================================================
 # ================= ADD EXPENSE ========================
-# =====================================================
+
 else:
 
     response = client.chat.completions.create(
